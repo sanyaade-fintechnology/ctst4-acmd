@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using ZeroMQ;
+using System.IO;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace CTST4_ACMD
 {
@@ -15,17 +18,36 @@ namespace CTST4_ACMD
         //ZeroMQ.ZSocket sockACCTL;
         //ZeroMQ.ZSocket sockACPUB;
 
-        static void Main(string[] args)
+        static Dictionary<string, dynamic> ParseArguments(string[] args)
         {
-            client = new T4.API.Host(
-                    T4.APIServerType.Simulator,
-                    "T4Example",
-                    "112A04B0-5AAF-42F4-994E-FA7CB959C60B",
-                    "CTS",
-                    "LWalker",
-                    "3qlp2FIZ");
-            Console.WriteLine("connected");
+            Dictionary<string, dynamic> res = new Dictionary<string,dynamic>();
+            res["settings_file"] = args[0];
+            return res;
+        }
 
+        static JObject ReadSettingsJson(string settingsFile)
+        {
+            return JObject.Parse(File.ReadAllText(settingsFile));
+        }
+
+        static void Main(string[] args_raw)
+        {
+            Dictionary<string, dynamic> args = ParseArguments(args_raw);
+            dynamic settings = ReadSettingsJson(args["settings_file"]);
+
+            Dictionary<string, T4.APIServerType> strToServerType = 
+                new Dictionary<string,T4.APIServerType>() {
+                    { "simulator", T4.APIServerType.Simulator },
+                    { "live", T4.APIServerType.Live },
+            };
+            client = new T4.API.Host(
+                strToServerType[settings["api_server_type"].ToString()],
+                settings["app_name"].ToString(),
+                settings["app_license"].ToString(),
+                settings["firm"].ToString(),
+                settings["username"].ToString(),
+                settings["password"].ToString());
+            Console.WriteLine("connected");
         }
     }
 }

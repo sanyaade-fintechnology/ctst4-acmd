@@ -1,6 +1,8 @@
 # CTS T4 MD/AC connector module
 
-This has been tested against versions of the CTS T4:
+
+
+Tested against versions of the CTS T4 on Windows 7 x64:
 - 4.3.75.21 (sim)
 
 ## BUILDING

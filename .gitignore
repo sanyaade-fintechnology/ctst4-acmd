@@ -1,1 +1,3 @@
 *.suo
+packages
+paket.lock

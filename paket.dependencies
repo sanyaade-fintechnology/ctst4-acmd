@@ -1,3 +1,4 @@
 source https://api.nuget.org/v3/index.json
 
 nuget Newtonsoft.Json == 10.0.3
+nuget NLog.Config == 4.4.12

@@ -11,19 +11,6 @@
 		private short events;
 		private short readyEvents;
 
-		public zmq_pollitem_posix_t(IntPtr socket, ZPoll pollEvents)
-		{
-			if (socket == IntPtr.Zero)
-			{
-				throw new ArgumentException("Expected a valid socket handle.", "socket");
-			}
-
-			socketPtr = socket;
-			fileDescriptor = 0;
-			events = (short)pollEvents;
-			readyEvents = (short)ZPoll.None;
-		}
-
 		public IntPtr SocketPtr
 		{
 			get { return socketPtr; }

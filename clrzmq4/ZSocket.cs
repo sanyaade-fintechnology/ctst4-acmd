@@ -482,6 +482,11 @@ namespace ZeroMQ
 			return null;
 		}
 
+        public List<ZFrame> ReceiveMultipart()
+        {
+            return ReceiveFrames(int.MaxValue).ToList();
+        }
+
 		public IEnumerable<ZFrame> ReceiveFrames(int framesToReceive)
 		{
 			return ReceiveFrames(framesToReceive, ZSocketFlags.None);

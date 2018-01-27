@@ -48,17 +48,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="lib\Platform.__Internal.cs" />
-    <Compile Include="ZDevice.cs" />
-    <Compile Include="Monitoring\ZMonitors.cs" />
     <Compile Include="Z85.cs" />
     <Compile Include="ZActor.cs" />
     <Compile Include="ZFrameOption.cs" />
+    <Compile Include="ZPoller.cs" />
     <Compile Include="ZThread.cs" />
     <Compile Include="ZSocketSetup.cs" />
-    <Compile Include="Devices\PubSubDevice.cs" />
-    <Compile Include="Devices\PushPullDevice.cs" />
-    <Compile Include="Devices\RouterDealerDevice.cs" />
-    <Compile Include="Devices\StreamDealerDevice.cs" />
     <Compile Include="lib\DispoIntPtr.cs" />
     <Compile Include="lib\DispoIntPtr.Ansi.cs" />
     <Compile Include="lib\Platform.cs" />
@@ -69,12 +64,6 @@
     <Compile Include="lib\zmq.cs" />
     <Compile Include="lib\zmq_pollitem_posix_t.cs" />
     <Compile Include="lib\zmq_pollitem_windows_t.cs" />
-    <Compile Include="Monitoring\ZMonitorEventData.cs" />
-    <Compile Include="Monitoring\ZMonitorEvents.cs" />
-    <Compile Include="Monitoring\ZMonitor.cs" />
-    <Compile Include="Monitoring\ZMonitorEventArgs.cs" />
-    <Compile Include="Monitoring\ZMonitorFileDescriptorEventArgs.cs" />
-    <Compile Include="Monitoring\ZMonitorIntervalEventArgs.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="RouterMandatory.cs" />
     <Compile Include="TcpKeepaliveBehaviour.cs" />
@@ -84,16 +73,11 @@
     <Compile Include="ZException.cs" />
     <Compile Include="ZFrame.cs" />
     <Compile Include="ZMessage.cs" />
-    <Compile Include="ZPollItems.cs" />
-    <Compile Include="ZPollItems.Posix.cs" />
-    <Compile Include="ZPollItems.Win32.cs" />
     <Compile Include="ZSocket.cs" />
     <Compile Include="ZSocketFlags.cs" />
     <Compile Include="ZSocketOption.cs" />
     <Compile Include="ZSocketType.cs" />
     <Compile Include="ZSymbol.cs" />
-    <Compile Include="ZPoll.cs" />
-    <Compile Include="ZPollItem.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

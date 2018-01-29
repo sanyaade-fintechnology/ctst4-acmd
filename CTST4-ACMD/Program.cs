@@ -8,6 +8,10 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NLog;
 using NLog.Config;
+using System.Reflection;
+using System.Collections.Concurrent;
+using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace CTST4_ACMD
 {
@@ -15,22 +19,73 @@ namespace CTST4_ACMD
     class G
     {
         public static T4.API.Host client;
-        public static ZSocket sockMDCTL = new ZSocket(ZSocketType.ROUTER);
+        public static MDController mdController;
         public static ZSocket sockMDPUB = new ZSocket(ZSocketType.PUB);
-        public static ZSocket sockACCTL = new ZSocket(ZSocketType.ROUTER);
         public static ZSocket sockACPUB = new ZSocket(ZSocketType.PUB);
+        public static DateTime startTime = DateTime.UtcNow;
+        public static ActionQueue actionQueue = new ActionQueue();
     }
 
-    class CodecException : Exception
+    class ActionQueue
     {
-        public CodecException() : base() { }
-        public CodecException(string msg) : base(msg) { }
+        public ZSocket Socket { get; private set; }
+
+        string _addr;
+        ConcurrentQueue<Action> _queue = new ConcurrentQueue<Action>();
+        ZContext _ctx;
+
+        public ActionQueue(ZContext ctx = null)
+        {
+            if (ctx == null)
+            {
+                ctx = ZContext.Current;
+            }
+            _ctx = ctx;
+            Socket = new ZSocket(_ctx, ZSocketType.PULL);
+            _addr = "inproc://taskqueue-notifier-" + Guid.NewGuid().ToString();
+            Socket.Bind(_addr);
+        }
+
+        public void Enqueue(Action action)
+        {
+            _queue.Enqueue(action);
+            ZSocket sock = new ZSocket(_ctx, ZSocketType.PUSH);
+            sock.Connect(_addr);
+            sock.Send(new ZFrame());
+            sock.Close();
+        }
+
+        public int ConsumeAll()
+        {
+            int numConsumed = 0;
+            Socket.ReceiveFrame();
+            Action action;
+            while (_queue.TryDequeue(out action))
+            {
+                action();
+                numConsumed += 1;
+            }
+            return numConsumed;
+        }
     }
 
-    class DecodingException : Exception
+    class MDController : Controller
     {
-        public DecodingException() : base() { }
-        public DecodingException(string msg) : base(msg) { }
+        public MDController(string name, string addr, ZContext ctx = null)
+            : base(name, addr, ctx)
+        {
+        }
+
+        [Controller.Command]
+        protected JObject GetStatus(List<ZFrame> ident, JObject msg)
+        {
+            TimeSpan uptime = DateTime.UtcNow - G.startTime;
+            JObject res = new JObject();
+            res["name"] = "ctst4-md";
+            res["connector_name"] = "ctst4";
+            res["uptime"] = uptime.TotalSeconds;
+            return res;
+        }
     }
 
     class Program
@@ -196,66 +251,16 @@ optional arguments:
 
         static void SetupZMQSockets(Dictionary<string, dynamic> args)
         {
-            G.sockMDCTL.Bind(args["md_ctl_addr"]);
+            G.mdController = new MDController("MD", args["md_ctl_addr"]);
             G.sockMDPUB.Bind(args["md_pub_addr"]);
-            G.sockACCTL.Bind(args["ac_ctl_addr"]);
             G.sockACPUB.Bind(args["ac_pub_addr"]);
         }
        
-        static Tuple<List<ZFrame>, JObject> ExtractMessage(List<ZFrame> msgParts)
-        {
-            int splIdx = msgParts.FindIndex(x => x.Length == 0);
-            if (splIdx != msgParts.Count - 2)
-            {
-                throw new ArgumentException("malformed message");
-            }
-            var ident = msgParts.GetRange(0, splIdx);
-            var msg = msgParts.Last();
-            return new Tuple<List<ZFrame>, JObject>(ident, JObject.Parse(msg.ToString()));
-        }
-
-        static string IdentToString(List<ZFrame> ident)
-        {
-            var encoding = Encoding.GetEncoding("latin1");
-            var parts = ident.Select(x => x.ToString(encoding).Replace('/', '\\'));
-            return String.Join("/", parts);
-        }
-
-        static void HandleMDCTLMessage1(List<ZFrame> ident, JObject msg)
-        {
-            string cmd = msg["command"].ToString();
-            string msgID = msg["msg_id"].ToString();
-            string debugStr = "ident={0}, command={1}, msg_id={2}";
-            debugStr = String.Format(debugStr, IdentToString(ident), cmd, msgID);
-            L.Debug("> " + debugStr);
-            JObject res = new JObject();
-            try
-            {
-                res["123"] = "testing";
-            }
-            catch (Exception err)
-            {
-                L.Error(err, "generic error handling MD message:");
-            }
-            if (res.Count > 0)
-            {
-                var msgOut = new JObject();
-                msgOut["result"] = "ok";
-                msgOut["msg_id"] = msgID;
-                msgOut["content"] = res;
-                var framesOut = new List<ZFrame>(ident);
-                framesOut.Add(new ZFrame());
-                framesOut.Add(new ZFrame(msgOut.ToString()));
-                G.sockMDCTL.SendFrames(framesOut);
-            }
-            L.Debug("< " + debugStr);
-        }
-
         static void StartEventLoop()
         {
             var poller = new ZPoller();
-            poller.Register(G.sockACCTL, ZPoller.POLLIN);
-            poller.Register(G.sockMDCTL, ZPoller.POLLIN);
+            poller.Register(G.mdController.Socket, ZPoller.POLLIN);
+            poller.Register(G.actionQueue.Socket, ZPoller.POLLIN);
             while (true)
             {
                 try
@@ -264,16 +269,13 @@ optional arguments:
                     foreach (var item in pollRes)
                     {
                         var sock = item.socket;
-                        var spl = ExtractMessage(sock.ReceiveMultipart());
-                        var ident = spl.Item1;
-                        var msg = spl.Item2;
-                        if (sock == G.sockMDCTL)
+                        if (sock == G.mdController.Socket)
                         {
-                            HandleMDCTLMessage1(ident, msg);
+                            G.mdController.HandleMessage();
                         }
-                        else if (sock == G.sockACCTL)
+                        else if (sock == G.actionQueue.Socket)
                         {
-                            // handle ac message
+                            Debug.Assert(G.actionQueue.ConsumeAll() > 0);
                         }
                     }
                 }

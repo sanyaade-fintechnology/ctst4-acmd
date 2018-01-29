@@ -89,6 +89,9 @@
       <Paket>True</Paket>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Compile Include="Controller.cs" />
+    <Compile Include="Error.cs" />
+    <Compile Include="Exceptions.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -107,7 +110,9 @@
     </When>
   </Choose>
   <PropertyGroup>
-    <PreBuildEvent>copy $(SolutionDir)\lib\$(PlatformName)\* $(TargetDir)</PreBuildEvent>
+    <PreBuildEvent>copy $(SolutionDir)\lib\$(PlatformName)\* $(TargetDir)
+if not exist $(TargetDir)\codes mkdir $(TargetDir)\codes
+copy $(SolutionDir)\codes\data\* $(TargetDir)\codes</PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

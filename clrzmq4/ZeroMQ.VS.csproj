@@ -72,7 +72,6 @@
     <Compile Include="ZError.cs" />
     <Compile Include="ZException.cs" />
     <Compile Include="ZFrame.cs" />
-    <Compile Include="ZMessage.cs" />
     <Compile Include="ZSocket.cs" />
     <Compile Include="ZSocketFlags.cs" />
     <Compile Include="ZSocketOption.cs" />

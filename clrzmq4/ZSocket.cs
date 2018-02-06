@@ -412,47 +412,6 @@ namespace ZeroMQ
 			return SendBytes(buffer, offset, count, flags, out error);
 		} // just Send*
 
-		public ZMessage ReceiveMessage()
-		{
-			return ReceiveMessage(ZSocketFlags.None);
-		}
-
-		public ZMessage ReceiveMessage(out ZError error)
-		{
-			return ReceiveMessage(ZSocketFlags.None, out error);
-		}
-
-		public ZMessage ReceiveMessage(ZSocketFlags flags)
-		{
-			ZError error;
-			ZMessage message = ReceiveMessage(flags, out error);
-			if (error != ZError.None)
-			{
-				throw new ZException(error);
-			}
-			return message;
-		}
-
-		public ZMessage ReceiveMessage(ZSocketFlags flags, out ZError error)
-		{
-			ZMessage message = null;
-			ReceiveMessage(ref message, flags, out error);
-			return message;
-		}
-
-		public bool ReceiveMessage(ref ZMessage message, out ZError error)
-		{
-			return ReceiveMessage(ref message, ZSocketFlags.None, out error);
-		}
-
-		public bool ReceiveMessage(ref ZMessage message, ZSocketFlags flags, out ZError error)
-		{
-			EnsureNotDisposed();
-
-			int count = int.MaxValue;
-			return ReceiveFrames(ref count, ref message, flags, out error);
-		}
-
 		public ZFrame ReceiveFrame()
 		{
 			ZError error;
@@ -563,18 +522,6 @@ namespace ZeroMQ
 			return true;
 		}
 
-		public virtual void Send(ZMessage msg) {
-			SendMessage(msg);
-		} // just Send*
-		public virtual bool Send(ZMessage msg, out ZError error) {
-			return SendMessage(msg, out error);
-		} // just Send*
-		public virtual void Send(ZMessage msg, ZSocketFlags flags) {
-			SendMessage(msg, flags);
-		} // just Send*
-		public virtual bool Send(ZMessage msg, ZSocketFlags flags, out ZError error) {
-			return SendMessage(msg, flags, out error);
-		} // just Send*
 		public virtual void Send(IEnumerable<ZFrame> frames) {
 			SendFrames(frames);
 		} // just Send*
@@ -615,29 +562,10 @@ namespace ZeroMQ
 			return SendFrame(frame, flags, out error);
 		} // just Send*
 
-		public virtual void SendMessage(ZMessage msg)
-		{
-			SendMessage(msg, ZSocketFlags.None);
-		}
-
-		public virtual bool SendMessage(ZMessage msg, out ZError error)
-		{
-			return SendMessage(msg, ZSocketFlags.None, out error);
-		}
-
-		public virtual void SendMessage(ZMessage msg, ZSocketFlags flags)
-		{
-			ZError error;
-			if (!SendMessage(msg, flags, out error))
-			{
-				throw new ZException(error);
-			}
-		}
-
-		public virtual bool SendMessage(ZMessage msg, ZSocketFlags flags, out ZError error)
-		{
-			return SendFrames((IEnumerable<ZFrame>)msg, flags, out error);
-		}
+        public virtual void SendMultipart(IEnumerable<ZFrame> frames)
+        {
+            SendFrames(frames);
+        }
 
 		public virtual void SendFrames(IEnumerable<ZFrame> frames)
 		{
@@ -771,58 +699,6 @@ namespace ZeroMQ
 
 			// Tell IDisposable to not unallocate zmq_msg
 			frame.Dismiss();
-			return true;
-		}
-
-		public bool Forward(ZSocket destination, out ZMessage message, out ZError error)
-		{
-			EnsureNotDisposed();
-
-			error = default(ZError);
-			message = null; // message is always null
-
-			bool more = false;
-
-			using (var msg = ZFrame.CreateEmpty())
-			{
-				do
-				{
-					while (-1 == zmq.msg_recv(msg.Ptr, this.SocketPtr, (int)ZSocketFlags.None))
-					{
-						error = ZError.GetLastErr();
-
-						if (error == ZError.EINTR)
-						{
-							error = default(ZError);
-							continue;
-						}
-
-						return false;
-					}
-
-					// will have to receive more?
-					more = ReceiveMore;
-
-					// sending scope
-					while (-1 != zmq.msg_send(msg.Ptr, destination.SocketPtr, more ? (int)ZSocketFlags.More : (int)ZSocketFlags.None))
-					{
-						error = ZError.GetLastErr();
-
-						if (error == ZError.EINTR)
-						{
-							error = default(ZError);
-							continue;
-						}
-
-						return false;
-					}
-					
-					// msg.Dismiss
-
-				} while (more);
-
-			} // using (msg) -> Dispose
-
 			return true;
 		}
 

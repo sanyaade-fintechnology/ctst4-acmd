@@ -106,6 +106,7 @@ namespace CTST4_ACMD
             CAPABILITIES.Add("SUBSCRIBE");
             CAPABILITIES.Add("GET_TICKER_FIELDS");
             CAPABILITIES.Add("GET_TICKER_INFO_PRICE_TICK_SIZE");
+            CAPABILITIES.Add("GET_TICKER_INFO_VOLUME_TICK_SIZE");
             CAPABILITIES = new JArray(CAPABILITIES.OrderBy((x) => x.ToString()));
         }
 
@@ -233,7 +234,7 @@ namespace CTST4_ACMD
             string dir = "/";
             try
             {
-                dir = msg["content"]["directory"].ToString();
+                dir = msg["content"]["path"].ToString();
             }
             catch (Exception) { }
             if (dir == "")
@@ -703,7 +704,18 @@ optional arguments:
             var msgParts = new List<ZFrame>();
             msgParts.Add(new ZFrame(tickerID + "\x02"));
             msgParts.Add(new ZFrame(" " + msg.ToString()));
-            G.pubAQ.Enqueue(() => G.sockMDPUB.SendMultipart(msgParts));
+            var msg2 = new JObject();
+            msg2["daily"] = new JObject();
+            msg2["daily"]["num_trades"] = market.LastDepth.TotalTradeCount;
+            msg2["daily"]["volume"] = market.LastDepth.TotalTradedVolume;
+            var msgParts2 = new List<ZFrame>();
+            msgParts2.Add(new ZFrame(tickerID + "\x03"));
+            msgParts2.Add(new ZFrame(" " + msg2.ToString()));
+            G.pubAQ.Enqueue(() =>
+            {
+                G.sockMDPUB.SendMultipart(msgParts);
+                G.sockMDPUB.SendMultipart(msgParts2);
+            });
             // emit volume-by-price info from poChanges?
         }
 

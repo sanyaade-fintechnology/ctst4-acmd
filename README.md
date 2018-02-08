@@ -1,6 +1,6 @@
 # CTS T4 MD/AC connector module
 
-
+<b>Only MD is currently supported. AC will be added in a future version.</b>
 
 Tested against versions of the CTS T4 on Windows 7 x64:
 - 4.3.75.21 (sim)

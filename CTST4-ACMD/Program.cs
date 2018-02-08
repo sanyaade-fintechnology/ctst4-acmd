@@ -49,6 +49,7 @@ namespace CTST4_ACMD
     class MDController : Controller
     {
         JArray CAPABILITIES = new JArray();
+        JObject AVAILABLE_QUOTES = new JObject();
 
         class CTSSubDef
         {
@@ -107,7 +108,21 @@ namespace CTST4_ACMD
             CAPABILITIES.Add("GET_TICKER_FIELDS");
             CAPABILITIES.Add("GET_TICKER_INFO_PRICE_TICK_SIZE");
             CAPABILITIES.Add("GET_TICKER_INFO_VOLUME_TICK_SIZE");
+            CAPABILITIES.Add("PUB_ORDER_BOOK_POSITIONS");
             CAPABILITIES = new JArray(CAPABILITIES.OrderBy((x) => x.ToString()));
+
+            AVAILABLE_QUOTES = new JObject();
+            AVAILABLE_QUOTES["ask_price"] = null;
+            AVAILABLE_QUOTES["ask_size"] = null;
+            AVAILABLE_QUOTES["ask_num_orders"] = null;
+            AVAILABLE_QUOTES["bid_price"] = null;
+            AVAILABLE_QUOTES["bid_size"] = null;
+            AVAILABLE_QUOTES["bid_num_orders"] = null;
+            AVAILABLE_QUOTES["daily"] = new JObject();
+            AVAILABLE_QUOTES["daily"]["volume"] = null;
+            AVAILABLE_QUOTES["daily"]["num_trades"] = null;
+            AVAILABLE_QUOTES["daily"]["high"] = null;
+            AVAILABLE_QUOTES["daily"]["low"] = null;
         }
 
         [Controller.Command]
@@ -292,6 +307,12 @@ namespace CTST4_ACMD
             }
             res = new JArray(res.OrderBy((x) => x["name"]));
             return res;
+        }
+
+        [Controller.Command]
+        JToken ListAvailableQuotes(List<ZFrame> ident, JObject msg)
+        {
+            return AVAILABLE_QUOTES;
         }
 
         [Controller.Command]
@@ -643,6 +664,7 @@ optional arguments:
                 r["price"] = market.ConvertTicksToRealDecimal(lvl.Ticks);
                 r["size"] = lvl.Volume;
                 r["num_orders"] = lvl.NumOfOrders;
+                r["position"] = i;
                 res.Add(r);
             }
             return res;
